@@ -1,10 +1,12 @@
 const { age, graduation, date } = require('../../lib/utils');
+const Teacher = require('../models/Teacher');
 
 module.exports = {
-
 	index(req, res) {
+		Teacher.all((teachers) => {
+			return res.render('teachers/index', {teachers});
+		});
 
-		return res.render('teachers/index');
 	},
 
 	create(req, res) {
@@ -14,164 +16,59 @@ module.exports = {
 	post(req, res) {
 		const keys = Object.keys(req.body);
 
+		// eslint-disable-next-line no-undef
 		for (key of keys) {
 			
+			// eslint-disable-next-line no-undef
 			if(req.body[key] == '')
       
 				return res.send('Please, fill all fields!');
 		}
     
-		const query = `
-		INSERT INTO teachers (
-				avatar_url,
-				name,
-				birth_date,
-				education_level,
-				class_type,
-				subjects_taught,
-				created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id
-		`;
-
-		const values = [
-			req.body.avatar_url,
-			req.body.name,
-			date(req.body_birth).iso,
-			req.body.education_level,
-			req.body.class_type,
-			req.body.subjects_taught,
-			date(Date.now()).iso
-		];
-		// let { avatar_url, name, birth, education, class_type, services } = req.body;
-
-		// birth = Date.parse(birth);
-		// const created_at = Date.now();
-		// let id = 1;
-		// const lastTeacher = data.teachers[data.teachers.length - 1];
-		// if (lastTeacher) {
-		// 	id = lastTeacher.id + 1;
-		// }
-
-		// data.teachers.push({
-		// 	id,
-		// 	avatar_url,
-		// 	name,
-		// 	birth,
-		// 	education,
-		// 	class_type,
-		// 	services,
-		// 	created_at,
-		// });
-
-		// fs.writeFile('data.json', JSON.stringify(data, null, 2), (err) => {
-		// 	if (err) return res.send('Write file error!');
-
-		// 	return res.send('was successfully created');
-		// });
+		Teacher.create(req.body, (teacher) => {
+			return res.redirect(`/teachers/${teacher.id}`);
+		});
 
 		return;
 	},
 
 	show(req, res) {
+		Teacher.find(req.params.id, function (teachers) {
+			if (!teachers) res.send('Professor não encontrado!');
 
-		return;
-		// const { id } = req.params;
+			teachers.age = age(teachers.birth_date);
+			teachers.education_level = graduation(teachers.education_level);
+			teachers.subjects_taught = teachers.subjects_taught.split(',');
+			teachers.created_at = date(teachers.created_at).format;
 
-		// const foundTeacher = data.teachers.find(teacher => {
-		// 	return teacher.id == id;
-		// });
-
-		// if(!foundTeacher) return res.send('Teacher not found!');
-
-		// const teachers = {
-		// 	...foundTeacher,
-		// 	services: foundTeacher.services.split(','),
-		// 	age: age(foundTeacher.birth),
-		// 	created_at: new Intl.DateTimeFormat('pt-BR').format(foundTeacher.created_at),
-		// 	education: graduation(foundTeacher.education),
-		// };
-
-		// return res.render('teachers/show', { teachers });
+			return res.render('teachers/show', { teachers });
+		});
 	},
 
 	edit(req, res) {
+		Teacher.find(req.params.id, function (teachers) {
+			if (!teachers) res.send('Professor não encontrado!');
+				
+			teachers.birth_date = date(teachers.birth_date).iso;
 
-		return;
-
-		// const { id } = req.params;
-
-		// const foundTeacher = data.teachers.find(teacher => {
-		// 	return teacher.id == id;
-		// });
-
-		// if(!foundTeacher) return res.send('Teacher not found!');
-
-		// const teachers = {
-		// 	...foundTeacher,
-		// 	birth: date(foundTeacher.birth).iso
-		// };
-
-		// return res.render('teachers/edit', { teachers });
+			return res.render('teachers/edit', { teachers });
+		});
 	},
-
 	put(req, res) {
 		const keys = Object.keys(req.body);
 
-		for (key of keys) {
-			
-			if(req.body[key] == '')
-      
-				return res.send('Please, fill all fields!');
+		for (let key of keys) {
+			if (req.body[key] == '')
+				return res.send('Por favor, preencha todos os campos.');
 		}
-		let { avatar_url, name, birth, education, class_type, services } = req.body;
 		
-		return;
-		// const { id } = req.body;
-		// let index = 0;
-
-		// const foundTeacher = data.teachers.find((teacher, foundIndex) => {
-		// 	if(teacher.id == id) {
-		// 		index = foundIndex;
-
-		// 		return true;
-		// 	}
-		// });
-
-		// if(!foundTeacher) return res.send('Teacher not found!');
-
-		// const teachers = { 
-		// 	...foundTeacher,
-		// 	...req.body,
-		// 	birth: Date.parse(req.body.birth),
-		// 	id:  Number(req.body.id)
-		// };
-
-		// data.teachers[index] = teachers;
-
-		// fs.writeFile('data.json', JSON.stringify(data, null, 2), (err) => {
-		// 	if(err) return res.send('Write error!');
-
-		// 	// return res.redirect(`/teachers/${id}`);
-		// 	return res.send('Success!');
-		// });
+		Teacher.update(req.body, function () {
+			return res.redirect(`/teachers/${req.body.id}`);
+		});
 	},
-
 	delete(req, res) {
-
-		return;
-		// 	const { id } = req.body;
-
-		// 	const filteredTeachers = data.teachers.filter((teachers) => {
-		// 		return teachers.id != id;
-		// 	});
-
-		// 	data.teachers = filteredTeachers;
-
-		// 	fs.writeFile('data.json', JSON.stringify(data, null, 2), (err) => {
-		// 		if (err) return res.send('Write error!');
-
-	// 		return res.send('successfully deleted');
-	// 	});
+		Teacher.delete(req.body.id, function () {
+			return res.redirect('/teachers');
+		});
 	}
 };
